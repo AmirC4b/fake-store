@@ -4,20 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Store</title>
-    <link rel="stylesheet" href="output.css">
+    <link rel="stylesheet" href="./output.css">
+    <script src="./script.js" defer></script>
 </head>
 <body>
     <header>
         <div class="md:px-28 py-2 px-4 flex justify-between items-center">
             <div class="flex">
-                <h1 class="text-xl ">Online Shop</h1>
+                <h1 class="text-xl">Online Shop</h1>
                 <div class="hidden md:flex">
                     <ul class="flex gap-4 pl-10">
                         <li class="md:cursor-pointer">Home</li>
                         <li class="md:cursor-pointer">About</li>
-                        <li class="md:cursor-pointer group">
+                        <!-- Products dropdown menu -->
+                        <li class="md:cursor-pointer group relative">
                             Products
-                            <ul class="hidden group-hover:block absolute bg-white text-black py-5 px-5 pr-16 rounded-md">
+                            <!-- Dropdown container -->
+                            <ul id="cats-menu"
+                                class="absolute hidden group-hover:block bg-white text-black  px-3 rounded-md shadow-lg w-40 z-10">
+                                <!-- Categories will be dynamically inserted here -->
                             </ul>
                         </li>
                     </ul>
@@ -34,7 +39,7 @@
                 </div>
             </div>
         </div>
-    </header>
+    </header>    
     <main>
         <div class="bg-[#212529] ">
             <div class="text-white py-28 flex flex-col items-center">
@@ -42,7 +47,7 @@
                 <div class="mt-4 text-lg text-gray-400">Lorem ipsum dolor sit amet consectetur adipisicing elit.</div>
             </div>
         </div>
-        <div id="root"></div>
+        <div id="root"></div> <!-- Main content will be dynamically inserted here -->
     </main>
 </body>
 </html>
