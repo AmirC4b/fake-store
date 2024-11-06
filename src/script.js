@@ -37,11 +37,19 @@ async function getAllProductsByFilter(limit = "") {
   return result;
 }
 
-// Load More Products (increase count)
+// Load More Products (increase count and update URL)
 async function loadMoreProducts() {
-  currentProductCount += 4;  // Increase the product count
-  const moreProducts = await getAllProductsByFilter(currentProductCount);  // Fetch more products based on current count
-  renderProducts(moreProducts);  // Render the new products
+  currentProductCount += 4; // Increase the product count
+  
+  // Update the URL to show all products
+  history.pushState({}, "", "/products");
+
+  // Fetch all products according to current count and re-render
+  const moreProducts = await getAllProductsByFilter(currentProductCount);
+  renderProducts(moreProducts);
+
+  // Check the updated state to render the appropriate content based on the URL
+  checkState();
 }
 
 // Render Products
@@ -101,6 +109,12 @@ async function renderMainPage() {
   renderProducts(initialProducts);
 }
 
+// New function to render all products on /products URL
+async function renderAllProducts() {
+  const allProducts = await getAllProductsByFilter();
+  renderProducts(allProducts);
+}
+
 // Handle A Click (Prevent Default, Handle Navigation)
 function handleAClick(event) {
   event.preventDefault();
@@ -149,46 +163,16 @@ function renderSingleProduct({ category, description, image, price, title }) {
   root.innerHTML = template;
 }
 
-// Get Single Category Products
-async function getSingleCategory(cat) {
-  const result = await fetch(`https://fakestoreapi.com/products/category/${cat}`)
-    .then((res) => res.json());
-  return result;
-}
-
-// Render Single Category (Category Detail Page)
-function renderSingleCategory(list) {
-  const template = list
-    .map((product) => {
-      return `
-        <div onclick="handleProductClick(${product.id})" class="shadow-[0px_4px_10px_4px_#00000024] w-full rounded-md overflow-hidden">
-          <img src="${product.image}" class="w-full aspect-square object-cover" alt="${product.title}" />
-          <div class="flex flex-col items-center gap-4 py-4">
-            <h4>${product.title}</h4>
-            <div>
-              <span>${product.price}</span>
-              <span>تومان</span>
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  const result = `<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-12">${template}</div>`;
-  root.innerHTML = result;
-}
-
 // Check Current URL Path and Render Corresponding Content
 async function checkState() {
   const pathName = location.pathname;
 
   switch (true) {
     case pathName === "/products":
-      renderAllProducts();
+      renderAllProducts();  // Show all products on this path
       break;
     case pathName === "/":
-      renderMainPage();
+      renderMainPage();  // Show the main page
       break;
     case pathName.includes("/categories/"):
       let cat = pathName.split("/").pop();
@@ -201,7 +185,7 @@ async function checkState() {
       renderSingleProduct(singlePData);
       break;
     default:
-      renderMainPage();
+      renderMainPage();  // Default to main page if the path is unknown
       break;
   }
 }
