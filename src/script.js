@@ -1,11 +1,44 @@
-// DOM NODES
+// Elements for mobile menu
 const mobileMenu = document.getElementById("mobile-menu");
+const closeMenu = document.getElementById("close-menu");
+const navIcon = document.querySelector(".md\\:hidden"); // Mobile nav icon
+const mobileProducts = document.getElementById("mobile-products");
+const mobileCatsMenu = document.getElementById("mobile-cats-menu");
+
 let productsRoot;
 const root = document.getElementById("root");
-
 let currentProductCount = 4; // Initialize current product count for load more functionality
 
-// Render Menu Categories
+// Function to show the mobile menu
+navIcon.addEventListener("click", () => {
+  mobileMenu.classList.remove("hidden");
+});
+
+// Function to close the mobile menu
+closeMenu.addEventListener("click", () => {
+  mobileMenu.classList.add("hidden");
+});
+
+// Toggle categories menu in mobile view
+mobileProducts.addEventListener("click", async () => {
+  if (mobileCatsMenu.classList.contains("hidden")) {
+    // If the menu is hidden, fetch and show categories
+    const cats = await fetch("https://fakestoreapi.com/products/categories")
+      .then((res) => res.json());
+
+    const categoriesTemplate = cats
+      .map((item) => `<li><a href="/categories/${item}" onclick="handleAClick(event)">${item}</a></li>`)
+      .join("");
+
+    mobileCatsMenu.innerHTML = categoriesTemplate;
+    mobileCatsMenu.classList.remove("hidden");
+  } else {
+    // Hide the menu if it is already shown
+    mobileCatsMenu.classList.add("hidden");
+  }
+});
+
+// Render Menu Categories for Desktop
 async function renderMenuCategories() {
   const cats = await fetch("https://fakestoreapi.com/products/categories")
     .then((res) => res.json());
