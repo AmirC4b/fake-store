@@ -15,6 +15,7 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 // Function to update cart counter
 function updateCartCounter() {
   const cartCounter = document.getElementById('cart-counter');
+  const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
   cartCounter.textContent = cart.length;
 }
 
@@ -338,10 +339,10 @@ async function checkState() {
 
   switch (true) {
     case pathName === "/products":
-      renderMainPage();  // Ensure this line calls the main product page rendering function
+      renderMainPage(); // Render the main products page
       break;
     case pathName === "/":
-      renderMainPage();  // Show the main page on the home path
+      renderMainPage(); // Render the main page on the home path
       break;
     case pathName.includes("/categories/"):
       let cat = pathName.split("/").pop();
@@ -354,14 +355,14 @@ async function checkState() {
       renderSingleProduct(singlePData);
       break;
     case pathName === "/cart":
-      renderCartPage();  // Render the Cart page
+      renderCartPage(); // Render the cart page
       break;
     default:
-      renderMainPage();  // Default to main page if the path is unknown
+      renderMainPage(); // Default to main page if the path is unknown
       break;
   }
 }
-
+window.addEventListener("popstate", checkState);
 // Attach "Add to Cart" buttons on initial load
 window.addEventListener('load', () => {
   attachAddToCartButtons();
