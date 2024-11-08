@@ -180,14 +180,52 @@ async function getAllProductsByFilter(limit = "") {
 }
 
 // Load More Products (increase count and update URL)
+// Load More Products (increase count and append to existing products)
 async function loadMoreProducts() {
-  currentProductCount += 4;
-  history.pushState({}, "", "/products");
-  const moreProducts = await getAllProductsByFilter(currentProductCount);
-  renderProducts(moreProducts);
-  checkState();
-}
+  try {
+    currentProductCount += 4; // Increase the count to fetch more products
+    const moreProducts = await getAllProductsByFilter(currentProductCount);
 
+    // Generate HTML for the new batch of products
+    const newProductTemplate = moreProducts
+      .slice(currentProductCount - 4, currentProductCount) // Only get the newly loaded products
+      .map((product) => {
+        return `
+          <div
+            onclick="handleProductClick(${product.id})"
+            class="shadow-[0px_4px_10px_4px_#00000024] w-full rounded-md p-2 overflow-hidden cursor-pointer"
+          >
+            <img
+              src="${product.image}"
+              class="w-full aspect-square object-cover"
+              alt="${product.title}"
+            />
+            <div class="flex flex-col items-center gap-4 py-4">
+              <h4>${product.title}</h4>
+              <div>
+                <span>${product.price}</span>
+                <span>Toman</span>
+                <div class="mt-4">
+                  <button class="add-to-cart-btn px-3 py-2 border border-black hover:bg-black hover:text-white duration-200 rounded-md" data-product-id="${product.id}">
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    // Append the new products to the existing content
+    productsRoot.insertAdjacentHTML("beforeend", newProductTemplate);
+
+    // Re-attach event listeners for "Add to Cart" buttons
+    attachAddToCartButtons();
+  } catch (error) {
+    console.error("Error loading more products:", error);
+  }
+}
 // Render Products on Main Page
 function renderProducts(list) {
   const template = list
