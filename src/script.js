@@ -5,16 +5,127 @@ const navIcon = document.querySelector(".md\\:hidden"); // Mobile nav icon
 const mobileProducts = document.getElementById("mobile-products");
 const mobileCatsMenu = document.getElementById("mobile-cats-menu");
 
-let productsRoot;
 const root = document.getElementById("root");
-let currentProductCount = 4; // Initialize current product count for load more functionality
+let productsRoot;
+let currentProductCount = 4; // Initialize current product count for "Load More" functionality
 
-// Function to show the mobile menu
+// Cart data initialization
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+// Function to update cart counter
+function updateCartCounter() {
+  const cartCounter = document.getElementById('cart-counter');
+  cartCounter.textContent = cart.length;
+}
+
+// Function to add product to cart
+function addToCart(product) {
+  cart.push(product);
+  localStorage.setItem('cart', JSON.stringify(cart));
+  updateCartCounter();
+}
+
+// Function to remove product from cart
+function removeFromCart(productId) {
+  cart = cart.filter(item => item.id !== productId);
+  localStorage.setItem('cart', JSON.stringify(cart));
+  updateCartCounter();
+  renderCartPage(); // Re-render the cart page after deletion
+}
+
+// Function to handle "Add to Cart" button click
+function handleAddToCartClick(productId) {
+  getSingleProduct(productId).then((product) => {
+    const productData = {
+      id: product.id,
+      title: product.title,
+      image: product.image,
+      price: product.price
+    };
+    addToCart(productData);
+  });
+}
+
+// Function to attach "Add to Cart" buttons
+function attachAddToCartButtons() {
+  const buttons = document.querySelectorAll('.add-to-cart-btn');
+  buttons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const productId = button.getAttribute('data-product-id');
+      handleAddToCartClick(productId);
+    });
+  });
+}
+
+document.getElementById('cart-button').addEventListener('click', handleCartClick);
+
+function handleCartClick(event) {
+  event.preventDefault(); // Prevent the default link behavior
+  history.pushState({}, "", "/cart"); // Update the URL to /cart
+  checkState(); // Check the state and render the Cart page
+}
+
+// Function to render the cart page
+function renderCartPage() {
+  const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+  const cartTemplate = cartItems
+    .map((item) => {
+      return `
+        <div class="shadow-[0px_4px_10px_4px_#00000024] w-full rounded-md p-2 overflow-hidden flex items-center justify-between">
+          <img src="${item.image}" alt="${item.title}" class="w-16 h-16 object-cover rounded-md">
+          <div class="flex-1 ml-4">
+            <h4 class="text-lg font-semibold">${item.title}</h4>
+            <p class="text-sm">${item.price} Toman</p>
+          </div>
+          <button class="remove-from-cart-btn text-red-500" data-product-id="${item.id}">
+            Remove
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+
+  root.innerHTML = `
+    <div class="w-11/12 mx-auto pt-12">
+      <h2 class="text-2xl mb-4">Your Cart</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        ${cartItems.length ? cartTemplate : '<p>Your cart is empty.</p>'}
+      </div>
+      <button id="continue-shopping-btn" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md">
+        Continue Shopping
+      </button>
+    </div>
+  `;
+
+  attachRemoveFromCartButtons(); // Attach event listeners for remove buttons
+
+
+   // Add event listener to "Continue Shopping" button
+   document.getElementById('continue-shopping-btn').addEventListener('click', () => {
+    history.pushState({}, "", "/products"); // Update the URL to /products
+    checkState(); // Check the state and render the main product page
+  
+  });
+}
+
+
+// Function to attach "Remove from Cart" buttons
+function attachRemoveFromCartButtons() {
+  const buttons = document.querySelectorAll('.remove-from-cart-btn');
+  buttons.forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const productId = parseInt(button.getAttribute('data-product-id'));
+      removeFromCart(productId);
+    });
+  });
+}
+
+// Mobile menu functionality
 navIcon.addEventListener("click", () => {
   mobileMenu.classList.remove("hidden");
 });
 
-// Function to close the mobile menu
 closeMenu.addEventListener("click", () => {
   mobileMenu.classList.add("hidden");
 });
@@ -22,7 +133,6 @@ closeMenu.addEventListener("click", () => {
 // Toggle categories menu in mobile view
 mobileProducts.addEventListener("click", async () => {
   if (mobileCatsMenu.classList.contains("hidden")) {
-    // If the menu is hidden, fetch and show categories
     const cats = await fetch("https://fakestoreapi.com/products/categories")
       .then((res) => res.json());
 
@@ -33,7 +143,6 @@ mobileProducts.addEventListener("click", async () => {
     mobileCatsMenu.innerHTML = categoriesTemplate;
     mobileCatsMenu.classList.remove("hidden");
   } else {
-    // Hide the menu if it is already shown
     mobileCatsMenu.classList.add("hidden");
   }
 });
@@ -71,20 +180,14 @@ async function getAllProductsByFilter(limit = "") {
 
 // Load More Products (increase count and update URL)
 async function loadMoreProducts() {
-  currentProductCount += 4; // Increase the product count
-  
-  // Update the URL to show all products
+  currentProductCount += 4;
   history.pushState({}, "", "/products");
-
-  // Fetch all products according to current count and re-render
   const moreProducts = await getAllProductsByFilter(currentProductCount);
   renderProducts(moreProducts);
-
-  // Check the updated state to render the appropriate content based on the URL
   checkState();
 }
 
-// Render Products
+// Render Products on Main Page
 function renderProducts(list) {
   const template = list
     .map((product) => {
@@ -104,8 +207,8 @@ function renderProducts(list) {
               <span>${product.price}</span>
               <span>Toman</span>
               <div class="mt-4">
-                <button class="px-3 py-2 border border-black hover:bg-black hover:text-white duration-200 rounded-md">
-                  Add to Cart              
+                <button class="add-to-cart-btn px-3 py-2 border border-black hover:bg-black hover:text-white duration-200 rounded-md" data-product-id="${product.id}">
+                  Add to Cart
                 </button>
               </div>
             </div>
@@ -116,6 +219,7 @@ function renderProducts(list) {
     .join("");
 
   productsRoot.innerHTML = template;
+  attachAddToCartButtons(); // Attach "Add to Cart" buttons
 }
 
 // Handle Product Click (Navigate to Product Detail Page)
@@ -141,12 +245,11 @@ async function renderMainPage() {
   `;
   root.innerHTML = mainTemplate;
   productsRoot = document.getElementById("products-root");
-
   const initialProducts = await getAllProductsByFilter(4);
   renderProducts(initialProducts);
 }
 
-// New function to render all products on /products URL
+// Render All Products on /products URL
 async function renderAllProducts() {
   const allProducts = await getAllProductsByFilter();
   renderProducts(allProducts);
@@ -160,59 +263,85 @@ function handleAClick(event) {
   checkState();
 }
 
-// Get Single Product Data
-async function getSingleProduct(productId) {
-  const result = await fetch(`https://fakestoreapi.com/products/${productId}`)
-    .then((res) => res.json());
+// Fetch Single Product by ID
+async function getSingleProduct(id) {
+  const result = await fetch(`https://fakestoreapi.com/products/${id}`).then((res) => res.json());
   return result;
 }
 
-// Render Single Product (Product Details Page)
-function renderSingleProduct({ category, description, image, price, title }) {
+// Render Single Product Page
+function renderSingleProduct(product) {
+  const { id, title, image, price, description } = product;
   const template = `
-    <div class="w-11/12 mx-auto pt-12 flex flex-col gap-2 md:gap-4 md:max-w-[1280px] md:flex-row md:items-start">
-      <img src="${image}" class="rounded-md w-1/3 max-w-md hidden md:block" alt="${title}" />
-      <div class="order-1 w-full mt-5"> 
-        <div class="mt-4">
-          <span class="text-white bg-black rounded-full px-4 py-1">${category}</span>
-          <a href="/" onclick="handleAClick(event)">Home</a> / 
-          <a onclick="handleAClick(event)" href="/products">All Products</a>
+    <div class="flex flex-col md:flex-row gap-8 w-11/12 mx-auto my-8">
+      <div class="w-full md:w-1/2">
+        <img src="${image}" class="w-full object-cover" alt="${title}" />
+      </div>
+      <div class="w-full md:w-1/2">
+        <h1 class="text-2xl font-bold mb-4">${title}</h1>
+        <div class="text-lg mb-4">
+          ${price} Toman
         </div>
-        <h1 class="text-slate-700 mt-4 text-2xl font-bold">${title}</h1>
-        <img src="${image}" class="rounded-md w-full md:hidden block my-4" alt="${title}" />
-        <div class="block text-center md:mt-4 md:text-start font-extrabold">
-          <span>${price}</span> Toman
-        </div>
-        <button class="w-full md:w-auto px-4 py-2 my-5 border-black border duration-200 rounded-md hover:bg-black hover:text-white">Add To Cart</button>
-        <p class="w-[30rem] my-3 flex justify-center items-center">${description}</p>
+        <button class="px-3 py-2 border border-black hover:bg-black hover:text-white duration-200 rounded-md mt-4 add-to-cart-btn" data-product-id="${id}">
+          Add to Cart
+        </button>
+        <p class="mt-8 text-justify text-sm md:text-base leading-6 md:leading-8">${description}</p>
       </div>
     </div>
   `;
   root.innerHTML = template;
+  attachAddToCartButtons(); // Attach "Add to Cart" button
 }
 
-// Get Single Category Products
-async function getSingleCategory(cat) {
-  const result = await fetch(`https://fakestoreapi.com/products/category/${cat}`)
+// Fetch Single Category Products
+async function getSingleCategory(categoryName) {
+  const result = await fetch(`https://fakestoreapi.com/products/category/${categoryName}`)
     .then((res) => res.json());
   return result;
 }
 
-// Render Single Category
-function renderSingleCategory(products) {
-  renderProducts(products);
+// Render Single Category Products
+function renderSingleCategory(productsList) {
+  const template = productsList
+    .map((product) => {
+      return `
+        <div onclick="handleProductClick(${product.id})" class="shadow-[0px_4px_10px_4px_#00000024] w-full rounded-md p-2 overflow-hidden cursor-pointer">
+          <img src="${product.image}" class="w-full aspect-square object-cover" alt="${product.title}" />
+          <div class="flex flex-col items-center gap-4 py-4">
+            <h4>${product.title}</h4>
+            <div>
+              <span>${product.price}</span>
+              <span>Toman</span>
+              <div class="mt-4">
+                <button class="add-to-cart-btn px-3 py-2 border border-black hover:bg-black hover:text-white duration-200 rounded-md" data-product-id="${product.id}">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  root.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      ${template}
+    </div>
+  `;
+  attachAddToCartButtons(); // Attach "Add to Cart" buttons
 }
 
-// Check Current URL Path and Render Corresponding Content
+// Function to Check Page State and Render Accordingly
 async function checkState() {
   const pathName = location.pathname;
 
   switch (true) {
     case pathName === "/products":
-      renderAllProducts();  // Show all products on this path
+      renderMainPage();  // Ensure this line calls the main product page rendering function
       break;
     case pathName === "/":
-      renderMainPage();  // Show the main page
+      renderMainPage();  // Show the main page on the home path
       break;
     case pathName.includes("/categories/"):
       let cat = pathName.split("/").pop();
@@ -224,14 +353,20 @@ async function checkState() {
       const singlePData = await getSingleProduct(pId);
       renderSingleProduct(singlePData);
       break;
+    case pathName === "/cart":
+      renderCartPage();  // Render the Cart page
+      break;
     default:
       renderMainPage();  // Default to main page if the path is unknown
       break;
   }
 }
 
-// Popstate listener to manage browser navigation
-window.addEventListener("popstate", checkState);
+// Attach "Add to Cart" buttons on initial load
+window.addEventListener('load', () => {
+  attachAddToCartButtons();
+  checkState(); // Check the state on load and render accordingly
+});
 
-// Start with checking the current state
-checkState();
+// Update cart counter on page load
+updateCartCounter();
